@@ -48,3 +48,6 @@ To run the application locally, follow these steps:
 ## Feedback and Contributions
 
 If you encounter any issues, have suggestions for improvement, or would like to contribute to the project, please feel free to open an issue or submit a pull request on GitHub.
+
+## Preview Video
+[Youtube link](https://www.youtube.com/watch?v=UrOyuWZmA54)
