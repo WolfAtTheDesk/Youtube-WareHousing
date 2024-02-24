@@ -1,11 +1,39 @@
 import youtube_get_methods as yt
 import mongoDB_methods     as mdb
 import sql_methods         as sql
+import misc
 
 from st_on_hover_tabs import on_hover_tabs
 import streamlit as st
 
+#-----------------------------Methods------------------------------------------#
+#Method to check if inputed channel_ids fetch a channel
+def check_channel(channel_id):
+    try:
+        channel_details = yt.get_channel_details(channel_id)
+        return channel_details
+    except:
+        st.write(f'Invalid data, unable to extract')
 
+#method to extract and upload data to the datalake
+def upload_to_mongo(channel_id):
+
+    if channel_id == ['']:
+        st.write(f'No Data to upload')
+    else:
+        with st.spinner('Uploading to db..'):
+            channel_details = yt.get_channel_details(channel_id)
+            video_ids     = yt.get_channel_videos(channel_id)
+            video_details = yt.get_video_details(video_ids)
+            comment_details  = []
+            for id in video_ids:
+                single = yt.get_comment_details(str(video_ids[0]))
+                comment_details += single
+
+            mdb.insert_into_mdb(channel_details,video_details,comment_details)
+            st.success("Upload to MongoDB successful!")
+
+#---------------------------Streamlit Setup------------------------------------#
 st.set_page_config(
                     layout="wide",
                     menu_items={'About': "[My Github Link!](https://github.com/WolfAtTheDesk)"})
@@ -25,98 +53,43 @@ with st.sidebar:
                          default_choice=0)
 
 
-
+#--------------------------------Pages-----------------------------------------#
 if tabs =='Dashboard':
     st.title(":rainbow[Youtube Data Warehousing]")
     st.divider()
 
     st.header(":red[What is this?]")
-    st.markdown("""The developed tool is a powerful yet user-friendly Streamlit application designed for accessing and analyzing data from multiple YouTube channels effortlessly. With this tool, users can input a YouTube channel ID and retrieve a comprehensive range of relevant data, including channel name, subscribers, total video count, playlist ID, video ID, likes, dislikes, and comments for each video, all seamlessly integrated using the Google API.
-
-Moreover, the tool offers the functionality to store this data efficiently in a MongoDB database, serving as a versatile data lake for future analysis and reference. Users can easily collect data from up to 10 different YouTube channels and store them in the data lake with a simple click of a button, streamlining the data collection process.
-
-Additionally, the tool provides an intuitive option to select a specific channel and migrate its data from the data lake to a SQL database, organizing the information into structured tables for enhanced manageability and query capabilities.
-
-Furthermore, users can leverage the search functionality within the SQL database, offering various search options and the ability to join tables to retrieve comprehensive channel details, empowering users with the insights they need for in-depth analysis and decision-making.
-
-In summary, this Streamlit application serves as a versatile and efficient solution for accessing, storing, and analyzing YouTube channel data, offering a seamless experience for users seeking valuable insights from their favorite channels.""")
+    st.markdown(misc.about_text)
 
     st.header(":green[How to use this tool]")
-    st.write("""To effectively utilize the features of this Streamlit application for accessing and analyzing YouTube channel data, follow these step-by-step instructions:
-
-1. **Retrieve the Youtube IDs**
-   - Navigate to the URL of the channels
-   - Click on About
-   - Click on more > channel id
-2. **Input YouTube Channel ID:**
-   - On the main page of the application, you'll find a designated input field to enter the YouTube channel ID of interest.
-   - Locate the YouTube channel ID by visiting the desired YouTube channel and extracting it from the URL or using other methods provided by YouTube's API documentation.
-
-3. **Retrieve Channel Data:**
-   - After entering the YouTube channel ID, click on the "Retrieve Data" button to initiate the process of fetching relevant data from the specified channel.
-   - The retrieved data will include the channel name, subscribers count, total video count, playlist ID, video ID, likes, dislikes, and comments for each video.
-
-4. **Storage Options:**
-   - Once the data is retrieved, you have the option to store it in a MongoDB database as a data lake by clicking on the corresponding button.
-   - You can collect data for up to 10 different YouTube channels and store them in the data lake by repeating the process for each channel and clicking on the storage button.
-
-5. **Migration to SQL Database:**
-   - If you wish to migrate the data from the data lake to a SQL database, select the desired channel name from the list provided.
-   - Click on the "Migrate to SQL Database" button to transfer the data to the SQL database as structured tables.
-
-6. **Search and Retrieval from SQL Database:**
-   - Utilize the search functionality within the SQL database to retrieve specific data based on different search options.
-   - You can join tables to get comprehensive channel details and insights, enhancing the depth of your analysis.
-
-7. **Exploring Additional Features:**
-   - Explore any additional features or options provided by the application, such as filtering options, visualization tools, or export functionalities, depending on the application's design.
-
-8. **Feedback and Support:**
-   - If you encounter any issues or have suggestions for improvement, feel free to provide feedback to the application developers for further enhancement.
-
-By following these instructions, you can effectively use the Streamlit application to access, store, and analyze data from multiple YouTube channels with ease and efficiency.""")
-
+    st.write(misc.how_to_text)
     st.header(":violet[How it works:]")
     st.write("Overall, this approach involves building a simple UI with Streamlit, retrieving data from the YouTube API, storing it in a MongoDB data lake, migrating it to a SQL data warehouse, querying the data warehouse with SQL, and displaying the data in the Streamlit app.")
 
-    if st.button("check"):
-        mdb.insert_into_mdb(channel_details,video_details,comment_details)
-        st.success("Upload to MongoDB successful !!")
-
+    # str1 = st.text_input("test")
+    # if st.button('Test'):
+    #     st.write(sql.insert_into_videos("styropyro"))
 
 elif tabs == 'Extraction':
 
-    st.markdown("#    ")
     st.write("### Enter YouTube Channel_ID below :")
-    channel_id = st.text_input(" Channel page > Click on About >Click on more > Channel id").split(',')
-    st.write(channel_id)
-    if channel_id and st.button("Check channels"):
-        try:
-            channel_details = yt.get_channel_details(channel_id)
-            st.write(f'#### Extracted data from :green["{channel_details[0]["Channel_name"]}"] channel')
-            st.table(channel_details)
-        except:
-            st.write(f'Invalid data, unable to extract')
+    channel_ids = st.text_input(" Channel page > Click on About > Click on more > Share > Copy ID").split(',')
+
+    #st.write(channel_ids)
+    if channel_ids and st.button("Check channels"):
+        channel_details = []
+        for channel_id in channel_ids:
+            channel_id = channel_id.strip()
+            print(channel_id)
+            channel_details += check_channel(channel_id)
+        st.write(f'#### Following channels found')
+        st.table(channel_details)
 
     if st.button("Upload to MongoDB"):
-        if channel_id == ['']:
-            st.write(f'No Data to upload')
-        else:
-            with st.spinner('Uploading to db..'):
-                print(channel_id)
-                channel_details = yt.get_channel_details(channel_id)
-                print(channel_details[0])
-                video_ids     = yt.get_channel_videos(channel_id)
-                print(video_ids[0])
-                video_details = yt.get_video_details(video_ids)
-                print(video_details[0])
-                comment_details  = []
-                # for id in video_ids:
-                single = yt.get_comment_details(str(video_ids[0]))
-                comment_details += single
-                print("uploading to mongo")
-                mdb.insert_into_mdb(channel_details,video_details,comment_details)
-                st.success("Upload to MongoDB successful !!")
+        for channel_id in channel_ids:
+            channel_id = channel_id.strip()
+            upload_to_mongo(channel_id)
+
 
 elif tabs =='Migrate':
     st.markdown("#   ")
@@ -131,6 +104,57 @@ elif tabs =='Migrate':
         st.success("Migration to MySQL Successful.")
         #except:
         #    st.error("Error encountered. Entries may already be present.")
+
+# VIEW PAGE
 elif tabs == 'Data Overview':
-    st.title("Tom")
-    st.write('Name of option is {}'.format(tabs))
+    st.write("## :orange[Select any question to get Insights]")
+    questions = st.selectbox('Questions',misc.questions)
+
+    if questions == 'What are the names of all the videos and their corresponding channels?':
+        st.write("### :violet[Number of videos in each channel :]")
+        st.write(sql.videos_by_channels())
+
+    elif questions == 'Which channels have the most number of videos, and how many videos do they have?':
+        st.write("### :violet[Channels with most Videos :]")
+        st.write(sql.videos_max_channels())
+
+
+    elif questions == 'What are the top 10 most viewed videos and their respective channels?':
+
+        st.write("### :violet[Most viewed videos :]")
+        st.write(sql.views_max_videos())
+
+    elif questions == 'How many comments were made on each video, and what are their corresponding video names?':
+
+        st.write("### :violet[Comments :]")
+        st.write(sql.comment_by_video())
+
+    elif questions == 'Which videos have the highest number of likes, and what are their corresponding channel names?':
+
+        st.write(sql.likes_max_videos())
+        st.write("### :violet[Most liked videos :]")
+
+
+    elif questions == 'What is the total number of likes and dislikes for each video, and what are their corresponding video names?':
+        st.write("### :violet[Total likes in videos :]")
+        st.write(sql.likes_total_videos())
+
+    elif questions == 'What is the total number of views for each channel, and what are their corresponding channel names?':
+
+        st.write("### :violet[Total views per channel :]")
+        st.write(sql.views_total_channels())
+
+    elif questions == 'What are the names of all the channels that have published videos in the year 2022?':
+        st.write("### :violet[Channels that published in the year 2022 :]")
+        st.write(sql.published_in_year())
+
+    elif questions == 'What is the average duration of all videos in each channel, and what are their corresponding channel names?':
+
+        st.write("### :violet[Avg video duration for channels :]")
+        st.write(sql.duration_average_channel())
+
+
+    elif questions == 'Which videos have the highest number of comments, and what are their corresponding channel names?':
+
+        st.write("### :violet[Videos with most comments :]")
+        st.write(sql.videos_max_comments())

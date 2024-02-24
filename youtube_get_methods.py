@@ -17,7 +17,7 @@ def get_channel_details(channel_id):
     response = youtube.channels().list(part = 'snippet,contentDetails,statistics',id= channel_id).execute()
 
     for i in range(len(response['items'])):
-        data = dict(Channel_id   = channel_id[i],
+        data = dict(Channel_id   = channel_id,
                     Channel_name = response['items'][i]['snippet']['title'],
                     Playlist_id  = response['items'][i]['contentDetails']['relatedPlaylists']['uploads'],
                     Subscribers  = response['items'][i]['statistics']['subscriberCount'],
@@ -37,7 +37,7 @@ def get_channel_videos(channel_id):
     playlist_id = res['items'][0]['contentDetails']['relatedPlaylists']['uploads']
     next_page_token = None
     count = 0
-    while True and count < 50:
+    while True and len(video_ids) < 20:
         res = youtube.playlistItems().list(playlistId=playlist_id,
                                            part='snippet',
                                            maxResults=50,
@@ -87,7 +87,7 @@ def get_comment_details(video_id):
     try:
         next_page_token = None
         count = 0
-        while True and count < 5:
+        while True and len(comment_data) < 5:
             response = youtube.commentThreads().list(part     = "snippet,replies",
                                                     videoId   = video_id,
                                                     maxResults= 20,

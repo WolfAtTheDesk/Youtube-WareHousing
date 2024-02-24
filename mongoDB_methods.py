@@ -14,18 +14,18 @@ channel_table = db.channels
 video_table   = db.videos
 comment_table = db.comments
 
-channel_table.create_index([("Channel_id", 1)], unique=True)
-video_table.create_index([("Video_id", 1)], unique=True)
-comment_table.create_index([("Comment_id", 1)], unique=True)
+#channel_table.create_index([("Channel_id", 1)], unique=True)
+#video_table.create_index([("Video_id", 1)], unique=True)
+#comment_table.create_index([("Comment_id", 1)], unique=True)
 
-3
+
 def insert_into_mdb(channel_details,video_details,comment_details):
     try:
         channel_table.insert_many(channel_details,ordered= False)
         video_table.insert_many(video_details,ordered= False)
         comment_table.insert_many(comment_details,ordered= False)
-    except errors.DuplicateKeyError as e:
-    print(f"DuplicateKeyError: {e}")
+    except:
+        print(f"DuplicateKeyError")
 def channel_names():
     ch_name = []
     for i in db.channels.find():
